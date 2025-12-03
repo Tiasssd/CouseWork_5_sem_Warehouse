@@ -7,35 +7,31 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: #e8e8e8;
-    color: #222;
-    line-height: 1.5;
+    background: #e0e0e0;
+    color: #000;
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 1200px;
+    margin: 20px auto;
     padding: 20px;
     background: #fff;
-    border: 2px solid #999;
-    min-height: calc(100vh - 80px);
+    border: 2px solid #333;
 }
 
 /* Навигация */
 .navbar {
     background: #333;
     color: white;
-    padding: 0;
+    padding: 10px 20px;
     border-bottom: 3px solid #000;
 }
 
 .nav-brand {
-    display: inline-block;
-    padding: 15px 20px;
     font-weight: bold;
-    font-size: 16px;
-    background: #222;
-    border-right: 2px solid #000;
+    font-size: 1.1em;
+    display: inline-block;
+    margin-right: 30px;
 }
 
 .nav-links {
@@ -43,54 +39,53 @@ body {
 }
 
 .nav-links a {
-    display: inline-block;
     color: white;
     text-decoration: none;
-    padding: 15px 18px;
-    border-right: 1px solid #555;
-    background: #333;
-    transition: none;
+    margin-left: 15px;
+    padding: 5px 10px;
+    background: #555;
+    border: 1px solid #777;
 }
 
 .nav-links a:hover {
-    background: #444;
+    background: #777;
 }
 
 .nav-links a.logout {
-    background: #900;
-    border-left: 2px solid #000;
+    background: #c00;
+    border-color: #a00;
 }
 
 .nav-links a.logout:hover {
-    background: #b00;
+    background: #a00;
 }
 
 /* Алерты */
 .alert {
-    padding: 12px 15px;
-    margin-bottom: 20px;
+    padding: 10px 15px;
+    margin-bottom: 15px;
     border: 2px solid;
-    background: #f5f5f5;
+    background: #fff;
 }
 
 .alert-success {
-    border-color: #080;
-    color: #060;
+    border-color: #0a0;
+    color: #0a0;
 }
 
 .alert-danger {
-    border-color: #900;
-    color: #700;
+    border-color: #c00;
+    color: #c00;
 }
 
 .alert-warning {
-    border-color: #c80;
-    color: #850;
+    border-color: #fa0;
+    color: #830;
 }
 
 .alert-info {
-    border-color: #069;
-    color: #047;
+    border-color: #09c;
+    color: #069;
 }
 
 /* Формы */
@@ -116,27 +111,20 @@ body {
     border: 2px solid #999;
     background: #fff;
     font-size: 14px;
-    font-family: Arial, sans-serif;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    outline: none;
     border-color: #333;
-}
-
-.form-group small {
-    display: block;
-    margin-top: 3px;
-    color: #666;
-    font-size: 12px;
+    outline: none;
 }
 
 .form-inline {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    max-width: 100%;
 }
 
 .form-inline .form-group {
@@ -146,16 +134,15 @@ body {
 
 /* Кнопки */
 .btn {
-    display: inline-block;
     padding: 8px 16px;
     border: 2px solid #333;
-    background: #ddd;
-    color: #000;
     cursor: pointer;
     font-size: 14px;
     text-decoration: none;
+    display: inline-block;
+    background: #ddd;
+    color: #000;
     font-weight: bold;
-    transition: none;
 }
 
 .btn:hover {
@@ -164,36 +151,36 @@ body {
 
 .btn-primary {
     background: #555;
-    color: white;
-    border-color: #000;
+    color: #fff;
+    border-color: #333;
 }
 
 .btn-primary:hover {
-    background: #666;
-}
-
-.btn-success {
-    background: #080;
-    color: white;
-    border-color: #060;
-}
-
-.btn-success:hover {
-    background: #0a0;
+    background: #777;
 }
 
 .btn-danger {
-    background: #900;
-    color: white;
-    border-color: #700;
+    background: #c00;
+    color: #fff;
+    border-color: #a00;
 }
 
 .btn-danger:hover {
-    background: #b00;
+    background: #a00;
+}
+
+.btn-success {
+    background: #0a0;
+    color: #fff;
+    border-color: #080;
+}
+
+.btn-success:hover {
+    background: #080;
 }
 
 .btn-sm {
-    padding: 4px 10px;
+    padding: 4px 8px;
     font-size: 12px;
 }
 
@@ -213,109 +200,58 @@ body {
 }
 
 .data-table th {
-    background: #333;
-    color: white;
+    background: #ddd;
     font-weight: bold;
-    border: 1px solid #000;
+    border-bottom: 2px solid #333;
 }
 
 .data-table tr:nth-child(even) {
     background: #f5f5f5;
 }
 
-.data-table tr:hover {
-    background: #e0e0e0;
-}
-
 .low-stock-row {
-    background: #ffcccc !important;
-}
-
-.low-stock-row:hover {
-    background: #ffbbbb !important;
+    background: #ffc !important;
 }
 
 /* Бейджи */
 .badge {
-    display: inline-block;
     padding: 3px 8px;
     border: 1px solid;
     font-size: 11px;
     font-weight: bold;
+    display: inline-block;
 }
 
 .badge-success {
-    background: #cfc;
-    color: #060;
+    background: #0a0;
+    color: white;
     border-color: #080;
 }
 
 .badge-danger {
-    background: #fcc;
-    color: #900;
-    border-color: #900;
-}
-
-/* Dashboard */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-    margin-top: 25px;
-}
-
-.dashboard-card {
-    padding: 25px;
-    background: #f9f9f9;
-    border: 3px solid #666;
-    text-decoration: none;
-    color: #000;
-    text-align: center;
-    transition: none;
-}
-
-.dashboard-card:hover {
-    background: #eee;
-    border-color: #333;
-}
-
-.dashboard-card h3 {
-    margin-bottom: 10px;
-    font-size: 1.3em;
-}
-
-.dashboard-card p {
-    color: #555;
-    font-size: 0.9em;
-}
-
-.alert-card {
-    border-color: #900;
-    background: #ffe0e0;
-}
-
-.alert-card:hover {
-    background: #ffd0d0;
+    background: #c00;
+    color: white;
+    border-color: #a00;
 }
 
 /* Статистика */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 15px;
-    margin: 25px 0;
+    margin: 20px 0;
 }
 
 .stat-card {
-    background: #444;
-    color: white;
     padding: 20px;
-    border: 3px solid #000;
+    background: #f5f5f5;
+    border: 3px solid #333;
     text-align: center;
 }
 
 .stat-warning {
-    background: #900;
+    background: #ffc;
+    border-color: #c00;
 }
 
 .stat-icon {
@@ -326,11 +262,47 @@ body {
 .stat-number {
     font-size: 1.8em;
     font-weight: bold;
-    margin: 8px 0;
+    margin: 5px 0;
 }
 
 .stat-label {
-    font-size: 0.85em;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Dashboard */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.dashboard-card {
+    padding: 25px;
+    background: #f5f5f5;
+    border: 3px solid #333;
+    text-decoration: none;
+    color: #000;
+    text-align: center;
+}
+
+.dashboard-card:hover {
+    background: #e5e5e5;
+}
+
+.dashboard-card h3 {
+    margin-bottom: 10px;
+    font-size: 1.3em;
+}
+
+.dashboard-card p {
+    color: #555;
+}
+
+.alert-card {
+    background: #ffc;
+    border-color: #c00;
 }
 
 /* Модальные окна */
@@ -348,10 +320,10 @@ body {
 .modal-content {
     background: white;
     margin: 50px auto;
-    padding: 25px;
+    padding: 30px;
     width: 90%;
     max-width: 600px;
-    border: 3px solid #000;
+    border: 3px solid #333;
     position: relative;
 }
 
@@ -359,14 +331,14 @@ body {
     position: absolute;
     right: 15px;
     top: 10px;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: bold;
     color: #000;
     cursor: pointer;
 }
 
 .close:hover {
-    color: #900;
+    color: #c00;
 }
 
 /* Логин */
@@ -381,34 +353,23 @@ body {
 .login-container h2 {
     text-align: center;
     margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #999;
-}
-
-/* Заголовки */
-h1 {
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 3px solid #333;
-    font-size: 1.8em;
-}
-
-h2 {
-    margin: 20px 0 15px 0;
-    font-size: 1.4em;
+    font-size: 1.5em;
 }
 
 /* Утилиты */
 .text-danger {
-    color: #900;
-    font-weight: bold;
+    color: #c00;
 }
 
-/* Поисковая форма */
-input[type="text"][placeholder*="Поиск"] {
-    border: 2px solid #666;
+h1 {
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 3px solid #333;
+    padding-bottom: 10px;
 }
 
-input[type="text"][placeholder*="Поиск"]:focus {
-    border-color: #000;
+h2 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-size: 1.4em;
 }
