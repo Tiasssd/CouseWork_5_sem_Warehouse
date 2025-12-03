@@ -68,6 +68,44 @@ def login():
     return render_template("login.html")
 
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Регистрация нового пользователя"""
+    if request.method == "POST":
+        login = request.form.get("login", "").strip()
+        password = request.form.get("password", "")
+        password_confirm = request.form.get("password_confirm", "")
+        role = request.form.get("role", "warehouse")
+
+        # Валидация
+        if len(login) < 3:
+            flash("Логин должен быть не менее 3 символов", "danger")
+            return render_template("register.html")
+
+        if len(password) < 6:
+            flash("Пароль должен быть не менее 6 символов", "danger")
+            return render_template("register.html")
+
+        if password != password_confirm:
+            flash("Пароли не совпадают", "danger")
+            return render_template("register.html")
+
+        # Проверка существования пользователя
+        if models.user_exists(login):
+            flash("Пользователь с таким логином уже существует", "danger")
+            return render_template("register.html")
+
+        # Создаём пользователя
+        try:
+            models.create_user(login, password, role)
+            flash("Регистрация успешна! Теперь войдите в систему", "success")
+            return redirect(url_for("login"))
+        except Exception as e:
+            flash(f"Ошибка при регистрации: {str(e)}", "danger")
+
+    return render_template("register.html")
+
+
 @app.route("/logout")
 def logout():
     """Выход из системы"""

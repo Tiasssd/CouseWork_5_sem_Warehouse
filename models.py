@@ -58,6 +58,19 @@ def create_user(login, password, role="warehouse"):
         conn.close()
 
 
+def user_exists(login):
+    """Проверить существует ли пользователь с таким логином"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) as count FROM users WHERE login = %s", (login,))
+        result = cursor.fetchone()
+        return result["count"] > 0
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # ============ ТОВАРЫ ============
 
 
