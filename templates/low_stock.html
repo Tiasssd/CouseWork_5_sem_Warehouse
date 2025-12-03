@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Низкий остаток{% endblock %}
+
+{% block content %}
+<h1>⚠️ Товары с низким остатком</h1>
+
+{% if stock %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Артикул</th>
+            <th>Название</th>
+            <th>Текущий остаток</th>
+            <th>Минимум</th>
+            <th>Недостаёт</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in stock %}
+        <tr class="low-stock-row">
+            <td>{{ item.sku }}</td>
+            <td>{{ item.name }}</td>
+            <td><strong>{{ item.quantity }}</strong> {{ item.unit }}</td>
+            <td>{{ item.min_stock }} {{ item.unit }}</td>
+            <td class="text-danger">{{ item.min_stock - item.quantity }} {{ item.unit }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="alert alert-success">✅ Все товары в достаточном количестве!</p>
+{% endif %}
+{% endblock %}

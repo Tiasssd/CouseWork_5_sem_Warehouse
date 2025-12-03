@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Главная панель{% endblock %}
+
+{% block content %}
+<h1>Главная панель управления складом</h1>
+
+<div class="dashboard-grid">
+    <a href="{{ url_for('products') }}" class="dashboard-card">
+        <h3>📦 Товары</h3>
+        <p>Управление справочником товаров</p>
+    </a>
+
+    <a href="{{ url_for('stock') }}" class="dashboard-card">
+        <h3>📊 Остатки</h3>
+        <p>Текущие остатки на складе</p>
+    </a>
+
+    <a href="{{ url_for('movement_income') }}" class="dashboard-card">
+        <h3>⬇️ Приход товара</h3>
+        <p>Оформить поступление</p>
+    </a>
+
+    <a href="{{ url_for('movement_outcome') }}" class="dashboard-card">
+        <h3>⬆️ Расход товара</h3>
+        <p>Оформить отгрузку</p>
+    </a>
+
+    <a href="{{ url_for('reports_movements') }}" class="dashboard-card">
+        <h3>📄 Отчёты</h3>
+        <p>Журнал движений товаров</p>
+    </a>
+
+    <a href="{{ url_for('low_stock') }}" class="dashboard-card alert-card">
+        <h3>⚠️ Низкий остаток</h3>
+        <p>Товары требующие заказа</p>
+    </a>
+</div>
+{% endblock %}

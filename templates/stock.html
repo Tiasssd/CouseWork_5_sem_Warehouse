@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Остатки{% endblock %}
+
+{% block content %}
+<h1>Текущие остатки на складе</h1>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Артикул</th>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Остаток</th>
+            <th>Ед. изм.</th>
+            <th>Мин. остаток</th>
+            <th>Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in stock %}
+        <tr {% if item.quantity < item.min_stock %}class="low-stock-row"{% endif %}>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.category or '-' }}</td>
+            <td><strong>{{ item.quantity }}</strong></td>
+            <td>{{ item.unit }}</td>
+            <td>{{ item.min_stock }}</td>
+            <td>
+                {% if item.quantity < item.min_stock %}
+                    <span class="badge badge-danger">Мало</span>
+                {% else %}
+                    <span class="badge badge-success">ОК</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
