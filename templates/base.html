@@ -18,6 +18,9 @@
             <a href="{{ url_for('movement_outcome') }}">Расход</a>
             <a href="{{ url_for('reports_movements') }}">Отчёты</a>
             <a href="{{ url_for('low_stock') }}">Низкий остаток</a>
+            {% if session.user_role == 'admin' %}
+                <a href="{{ url_for('users') }}">Пользователи</a>
+            {% endif %}
             <a href="{{ url_for('logout') }}" class="logout">Выход</a>
         </div>
     </nav>

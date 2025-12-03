@@ -71,6 +71,30 @@ def user_exists(login):
         conn.close()
 
 
+def get_all_users():
+    """Получить всех пользователей"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, login, role, created_at FROM users ORDER BY id")
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def delete_user_by_id(user_id):
+    """Удалить пользователя"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # ============ ТОВАРЫ ============
 
 

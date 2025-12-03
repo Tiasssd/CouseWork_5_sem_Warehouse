@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<h1>Управление пользователями</h1>
+
+<a href="{{ url_for('register') }}" class="btn btn-primary">➕ Добавить пользователя</a>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>Роль</th>
+            <th>Дата создания</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.login }}</td>
+            <td>
+                {% if user.role == 'admin' %}
+                    <span class="badge badge-danger">Администратор</span>
+                {% else %}
+                    <span class="badge badge-success">Кладовщик</span>
+                {% endif %}
+            </td>
+            <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>
+                {% if user.id != session.user_id %}
+                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Удалить пользователя?')">Удалить</button>
+                </form>
+                {% else %}
+                <span style="color: #999;">Текущий</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
