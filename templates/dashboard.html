@@ -35,10 +35,12 @@
 <h2 style="margin-top: 40px;">Быстрый доступ</h2>
 
 <div class="dashboard-grid">
+    {% if session.user_role == 'admin' %}
     <a href="{{ url_for('products') }}" class="dashboard-card">
         <h3>📦 Товары</h3>
         <p>Управление справочником товаров</p>
     </a>
+    {% endif %}
 
     <a href="{{ url_for('stock') }}" class="dashboard-card">
         <h3>📊 Остатки</h3>
@@ -64,5 +66,12 @@
         <h3>⚠️ Низкий остаток</h3>
         <p>Товары требующие заказа</p>
     </a>
+
+    {% if session.user_role == 'admin' %}
+    <a href="{{ url_for('users') }}" class="dashboard-card">
+        <h3>👥 Пользователи</h3>
+        <p>Управление доступом</p>
+    </a>
+    {% endif %}
 </div>
 {% endblock %}

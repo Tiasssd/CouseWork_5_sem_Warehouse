@@ -17,11 +17,12 @@
         </div>
     </form>
     
+    {% if session.user_role == 'admin' %}
     <button onclick="document.getElementById('addModal').style.display='block'" class="btn btn-primary">
         ➕ Добавить товар
     </button>
+    {% endif %}
 </div>
-
 
 <table class="data-table">
     <thead>
@@ -32,7 +33,9 @@
             <th>Ед. изм.</th>
             <th>Мин. остаток</th>
             <th>Цена</th>
+            {% if session.user_role == 'admin' %}
             <th>Действия</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody>
@@ -44,17 +47,20 @@
             <td>{{ product.unit }}</td>
             <td>{{ product.min_stock }}</td>
             <td>{{ product.price }} ₽</td>
+            {% if session.user_role == 'admin' %}
             <td>
                 <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm">Изменить</a>
                 <form method="POST" action="{{ url_for('delete_product', product_id=product.id) }}" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Удалить товар?')">Удалить</button>
                 </form>
             </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
+{% if session.user_role == 'admin' %}
 <!-- Модальное окно добавления -->
 <div id="addModal" class="modal">
     <div class="modal-content">
@@ -89,4 +95,5 @@
         </form>
     </div>
 </div>
+{% endif %}
 {% endblock %}

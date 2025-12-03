@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h2>Регистрация нового пользователя</h2>
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label>Логин:</label>
+            <input type="text" name="login" required autofocus minlength="3" maxlength="50">
+            <small style="color: #666;">Минимум 3 символа</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Пароль:</label>
+            <input type="password" name="password" required minlength="6">
+            <small style="color: #666;">Минимум 6 символов</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Подтверждение пароля:</label>
+            <input type="password" name="password_confirm" required minlength="6">
+        </div>
+        
+        <div class="form-group">
+            <label>Роль:</label>
+            <select name="role" required>
+                <option value="warehouse">Кладовщик</option>
+                <option value="admin">Администратор</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        <a href="{{ url_for('login') }}" class="btn">Вход</a>
+    </form>
+</div>
+{% endblock %}
