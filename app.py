@@ -21,7 +21,7 @@ import csv
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# ============ ДЕКОРАТОРЫЫ ============
+# ============ ДЕКОРАТОРЫ ============
 
 
 def login_required(f):
