@@ -26,6 +26,8 @@
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Фильтровать</button>
+    <a href="{{ url_for('export_movements', date_from=request.args.get('date_from', ''), date_to=request.args.get('date_to', ''), product_id=request.args.get('product_id', '')) }}" 
+       class="btn btn-success">📥 Экспорт в CSV</a>
 </form>
 
 <table class="data-table">

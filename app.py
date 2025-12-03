@@ -1,10 +1,22 @@
 # app.py - Главный файл Flask приложения
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    make_response,
+)
 from decimal import Decimal
 from functools import wraps
 from config import Config
+from io import StringIO
 import models
+import csv
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -70,8 +82,9 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    """Главная панель с кнопками навигации"""
-    return render_template("dashboard.html")
+    """Главная панель с статистикой"""
+    stats = models.get_dashboard_stats()
+    return render_template("dashboard.html", stats=stats)
 
 
 # ============ ТОВАРЫ ============
@@ -80,9 +93,17 @@ def dashboard():
 @app.route("/products")
 @login_required
 def products():
-    """Список товаров"""
-    products = models.get_all_products()
-    return render_template("products.html", products=products)
+    """Список товаров с поиском"""
+    search_query = request.args.get("search", "").strip()
+
+    if search_query:
+        products = models.search_products(search_query)
+    else:
+        products = models.get_all_products()
+
+    return render_template(
+        "products.html", products=products, search_query=search_query
+    )
 
 
 @app.route("/products/add", methods=["POST"])
@@ -118,16 +139,36 @@ def edit_product(product_id):
             min_stock = float(request.form.get("min_stock", 0))
             price = float(request.form.get("price", 0))
 
+            # DEBUG: выводим что получили
+            print(f"DEBUG: Updating product {product_id}")
+            print(f"  SKU: {sku}, Name: {name}, Category: {category}")
+            print(f"  Unit: {unit}, Min: {min_stock}, Price: {price}")
+            print(f"  User ID: {session['user_id']}")
+
             models.update_product(
-                product_id, sku, name, category, unit, min_stock, price
+                product_id,
+                sku,
+                name,
+                category,
+                unit,
+                min_stock,
+                price,
+                session["user_id"],
             )
+
             flash("Товар успешно обновлён", "success")
             return redirect(url_for("products"))
         except Exception as e:
+            # Выводим полную ошибку
+            import traceback
+
+            error_detail = traceback.format_exc()
+            print(f"ERROR: {error_detail}")
             flash(f"Ошибка при обновлении товара: {str(e)}", "danger")
 
     product = models.get_product_by_id(product_id)
-    return render_template("product_edit.html", product=product)
+    history = models.get_product_history(product_id)
+    return render_template("product_edit.html", product=product, history=history)
 
 
 @app.route("/products/delete/<int:product_id>", methods=["POST"])
@@ -236,6 +277,59 @@ def reports_movements():
     products = models.get_all_products()
 
     return render_template("reports.html", movements=movements, products=products)
+
+
+@app.route("/reports/movements/export")
+@login_required
+def export_movements():
+    """Экспорт журнала движений в CSV"""
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    product_id = request.args.get("product_id")
+
+    movements = models.export_movements_to_csv(date_from, date_to, product_id)
+
+    # Создаём CSV в памяти
+    si = StringIO()
+    # Для русского Excel используем точку с запятой как разделитель
+    writer = csv.writer(si, delimiter=";", lineterminator="\n")
+
+    # Заголовки
+    writer.writerow(
+        ["Дата", "Тип", "Артикул", "Товар", "Количество", "Пользователь", "Комментарий"]
+    )
+
+    # Данные
+    for m in movements:
+        writer.writerow(
+            [
+                m["movement_date"].strftime("%d.%m.%Y %H:%M"),
+                "Приход" if m["type"] == "income" else "Расход",
+                m["sku"],
+                m["product_name"],
+                str(m["quantity"]),  # Преобразуем в строку для корректного отображения
+                m["user_login"] or "-",
+                m["comment"] or "-",
+            ]
+        )
+
+    # Получаем содержимое
+    output = si.getvalue()
+    si.close()
+
+    # Добавляем BOM для UTF-8 (чтобы Excel понял кодировку)
+    output_with_bom = "\ufeff" + output
+
+    # Кодируем в UTF-8
+    output_bytes = output_with_bom.encode("utf-8")
+
+    response = make_response(output_bytes)
+    response.headers["Content-Disposition"] = (
+        "attachment; filename=movements_export.csv"
+    )
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+
+    return response
 
 
 # ============ ЗАПУСК ============

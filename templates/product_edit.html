@@ -33,4 +33,40 @@
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a href="{{ url_for('products') }}" class="btn">Отмена</a>
 </form>
+
+{% if history %}
+<h2 style="margin-top: 40px;">История изменений</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Действие</th>
+            <th>Пользователь</th>
+            <th>Изменения</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in history %}
+        <tr>
+            <td>{{ record.changed_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            <td>
+                {% if record.action == 'created' %}
+                    <span class="badge badge-success">Создан</span>
+                {% elif record.action == 'updated' %}
+                    <span class="badge" style="background: #17a2b8; color: white;">Изменён</span>
+                {% endif %}
+            </td>
+            <td>{{ record.user_login or '-' }}</td>
+            <td style="font-size: 0.9em; color: #666;">
+                {% if record.action == 'updated' %}
+                    Данные обновлены
+                {% else %}
+                    Товар добавлен в систему
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
 {% endblock %}
