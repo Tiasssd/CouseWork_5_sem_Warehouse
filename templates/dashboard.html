@@ -8,68 +8,69 @@
 <!-- Статистика -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon">📦</div>
+        <div class="stat-icon">ТОВАРЫ</div>
         <div class="stat-number">{{ stats.total_products }}</div>
         <div class="stat-label">Всего товаров</div>
     </div>
     
     <div class="stat-card {% if stats.low_stock_count > 0 %}stat-warning{% endif %}">
-        <div class="stat-icon">⚠️</div>
+        <div class="stat-icon">ВНИМАНИЕ</div>
         <div class="stat-number">{{ stats.low_stock_count }}</div>
         <div class="stat-label">Низкий остаток</div>
     </div>
     
     <div class="stat-card">
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon">ОПЕРАЦИИ</div>
         <div class="stat-number">{{ stats.today_movements }}</div>
         <div class="stat-label">Операций сегодня</div>
     </div>
     
     <div class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div class="stat-number">{{ "{:,.0f}".format(stats.total_value) }} BYN</div>
+        <div class="stat-icon">СТОИМОСТЬ</div>
+        <div class="stat-number">{{ "{:,.0f}".format(stats.total_value) }} ₽</div>
         <div class="stat-label">Стоимость склада</div>
     </div>
 </div>
+
 
 <h2 style="margin-top: 40px;">Быстрый доступ</h2>
 
 <div class="dashboard-grid">
     {% if session.user_role == 'admin' %}
     <a href="{{ url_for('products') }}" class="dashboard-card">
-        <h3>📦 Товары</h3>
+        <h3>ТОВАРЫ</h3>
         <p>Управление справочником товаров</p>
     </a>
     {% endif %}
 
     <a href="{{ url_for('stock') }}" class="dashboard-card">
-        <h3>📊 Остатки</h3>
+        <h3>ОСТАТКИ</h3>
         <p>Текущие остатки на складе</p>
     </a>
 
     <a href="{{ url_for('movement_income') }}" class="dashboard-card">
-        <h3>⬇️ Приход товара</h3>
+        <h3>ПРИХОД</h3>
         <p>Оформить поступление</p>
     </a>
 
     <a href="{{ url_for('movement_outcome') }}" class="dashboard-card">
-        <h3>⬆️ Расход товара</h3>
+        <h3>РАСХОД</h3>
         <p>Оформить отгрузку</p>
     </a>
 
     <a href="{{ url_for('reports_movements') }}" class="dashboard-card">
-        <h3>📄 Отчёты</h3>
+        <h3>ОТЧЁТЫ</h3>
         <p>Журнал движений товаров</p>
     </a>
 
     <a href="{{ url_for('low_stock') }}" class="dashboard-card alert-card">
-        <h3>⚠️ Низкий остаток</h3>
+        <h3>[!!!] НИЗКИЙ ОСТАТОК</h3>
         <p>Товары требующие заказа</p>
     </a>
 
     {% if session.user_role == 'admin' %}
     <a href="{{ url_for('users') }}" class="dashboard-card">
-        <h3>👥 Пользователи</h3>
+        <h3>ПОЛЬЗОВАТЕЛИ</h3>
         <p>Управление доступом</p>
     </a>
     {% endif %}

@@ -8,7 +8,7 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <form method="GET" style="flex: 1; max-width: 400px;">
         <div style="display: flex; gap: 10px;">
-            <input type="text" name="search" placeholder="🔍 Поиск по артикулу, названию, категории..." 
+            <input type="text" name="search" placeholder="Поиск по артикулу, названию, категории..." 
                    value="{{ search_query or '' }}" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
             <button type="submit" class="btn btn-primary">Найти</button>
             {% if search_query %}
@@ -19,7 +19,7 @@
     
     {% if session.user_role == 'admin' %}
     <button onclick="document.getElementById('addModal').style.display='block'" class="btn btn-primary">
-        ➕ Добавить товар
+         + Добавить товар
     </button>
     {% endif %}
 </div>
