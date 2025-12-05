@@ -3,30 +3,152 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<h1>{{ title }}</h1>
+<div class="container">
+    <h1>{{ title }}</h1>
 
-<form method="POST" class="form">
-    <div class="form-group">
-        <label>Товар:</label>
-        <select name="product_id" required>
-            <option value="">Выберите товар</option>
-            {% for product in products %}
-            <option value="{{ product.id }}">{{ product.sku }} - {{ product.name }}</option>
-            {% endfor %}
-        </select>
+    <div class="movement-layout">
+        <!-- ЛЕВАЯ ЧАСТЬ: ФОРМА -->
+        <div class="movement-form-column">
+            <form method="POST" class="form" id="movementForm">
+                <div class="form-group">
+                    <label>Товар:</label>
+                    <select name="product_id" id="productSelect" required>
+                        <option value="">Выберите товар</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.sku }} - {{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Количество:</label>
+                    <input type="number" step="0.001" name="quantity" id="quantityInput" required min="0.001">
+                    <div id="quantityPreview" class="quantity-preview"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Комментарий (номер накладной и т.п.):</label>
+                    <textarea name="comment" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{{ url_for('stock') }}" class="btn">Отмена</a>
+            </form>
+        </div>
+
+        <!-- ПРАВАЯ ЧАСТЬ: ИНФОРМАЦИЯ О ТОВАРЕ -->
+        <div class="movement-info-column">
+            <div class="product-info-box" id="productInfo">
+                <div class="info-placeholder">
+                    Выберите товар из списка
+                </div>
+            </div>
+        </div>
     </div>
+</div>
+
+<script>
+const movementType = "{{ movement_type }}"; // 'income' или 'outcome'
+let currentStock = 0;
+
+document.getElementById('productSelect').addEventListener('change', function() {
+    const productId = this.value;
+    const productInfo = document.getElementById('productInfo');
     
-    <div class="form-group">
-        <label>Количество:</label>
-        <input type="number" step="0.001" name="quantity" required min="0.001">
-    </div>
+    if (!productId) {
+        productInfo.innerHTML = '<div class="info-placeholder">Выберите товар из списка</div>';
+        currentStock = 0;
+        updateQuantityPreview();
+        return;
+    }
     
-    <div class="form-group">
-        <label>Комментарий (номер накладной и т.п.):</label>
-        <textarea name="comment" rows="3"></textarea>
-    </div>
+    // Загружаем информацию о товаре
+    fetch(`/api/product/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentStock = data.current_stock;
+            
+            const lowStock = currentStock < data.min_stock;
+            const stockClass = lowStock ? 'stock-warning' : 'stock-ok';
+            
+            productInfo.innerHTML = `
+                <div class="info-title">Информация о товаре</div>
+                <div class="info-row">
+                    <span class="info-label">Артикул:</span>
+                    <span class="info-value">${data.sku}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Название:</span>
+                    <span class="info-value">${data.name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Категория:</span>
+                    <span class="info-value">${data.category}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ед. измерения:</span>
+                    <span class="info-value">${data.unit}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Цена:</span>
+                    <span class="info-value">${data.price} ₽</span>
+                </div>
+                <div class="info-divider"></div>
+                <div class="info-row-highlight ${stockClass}">
+                    <span class="info-label">Текущий остаток:</span>
+                    <span class="info-value-big">${data.current_stock} ${data.unit}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Минимум:</span>
+                    <span class="info-value">${data.min_stock} ${data.unit}</span>
+                </div>
+            `;
+            
+            updateQuantityPreview();
+        })
+        .catch(error => {
+            productInfo.innerHTML = '<div class="info-error">Ошибка загрузки данных</div>';
+            console.error('Error:', error);
+        });
+});
+
+document.getElementById('quantityInput').addEventListener('input', updateQuantityPreview);
+
+function updateQuantityPreview() {
+    const quantityInput = document.getElementById('quantityInput');
+    const preview = document.getElementById('quantityPreview');
+    const quantity = parseFloat(quantityInput.value) || 0;
     
-    <button type="submit" class="btn btn-primary">Сохранить</button>
-    <a href="{{ url_for('stock') }}" class="btn">Отмена</a>
-</form>
+    if (quantity === 0 || currentStock === 0) {
+        preview.innerHTML = '';
+        return;
+    }
+    
+    let newStock;
+    if (movementType === 'income') {
+        newStock = currentStock + quantity;
+        preview.innerHTML = `
+            <div class="preview-calculation">
+                Остаток после операции: 
+                <span class="preview-before">${currentStock.toFixed(3)}</span>
+                <span class="preview-arrow">→</span>
+                <span class="preview-after income">${newStock.toFixed(3)}</span>
+            </div>
+        `;
+    } else {
+        newStock = currentStock - quantity;
+        const isError = newStock < 0;
+        const errorClass = isError ? 'error' : '';
+        preview.innerHTML = `
+            <div class="preview-calculation">
+                Остаток после операции: 
+                <span class="preview-before">${currentStock.toFixed(3)}</span>
+                <span class="preview-arrow">→</span>
+                <span class="preview-after outcome ${errorClass}">${newStock.toFixed(3)}</span>
+            </div>
+            ${isError ? '<div class="preview-error">⚠️ Недостаточно товара на складе!</div>' : ''}
+        `;
+    }
+}
+</script>
 {% endblock %}

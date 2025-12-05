@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Заказ от клиента {{ order.order_number }}</h1>
+
+    <div class="order-info-grid">
+        <div class="info-card">
+            <div class="info-card-title">Информация о заказе</div>
+            <div class="info-card-content">
+                <p><strong>Клиент:</strong> {{ order.customer_name }}</p>
+                <p><strong>Дата заказа:</strong> {{ order.order_date.strftime('%d.%m.%Y') if order.order_date else '-' }}</p>
+                <p><strong>Срок выполнения:</strong> {{ order.deadline_date if order.deadline_date else '-' }}</p>
+                {% if order.shipped_date %}
+                <p><strong>Дата отгрузки:</strong> {{ order.shipped_date if order.shipped_date else '-' }}</p>
+                {% endif %}
+                <p><strong>Создал:</strong> {{ order.created_by_name or '-' }}</p>
+                {% if order.notes %}
+                <p><strong>Примечание:</strong> {{ order.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title">Статус заказа</div>
+            <div class="info-card-content">
+                <p style="font-size: 14pt; font-weight: bold;">
+                    {% if order.status == 'new' %}
+                    <span class="badge badge-info">Новый</span>
+                    {% elif order.status == 'in_progress' %}
+                    <span class="badge badge-warning">В работе</span>
+                    {% elif order.status == 'ready' %}
+                    <span class="badge badge-success">Готов</span>
+                    {% elif order.status == 'shipped' %}
+                    <span class="badge badge-shipped">Отгружен</span>
+                    {% elif order.status == 'cancelled' %}
+                    <span class="badge badge-danger">Отменён</span>
+                    {% endif %}
+                </p>
+
+                {% if order.status not in ['shipped', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('update_customer_order_status', order_id=order.id) }}">
+                    <div class="form-group">
+                        <label>Изменить статус:</label>
+                        <select name="status" required>
+                            <option value="">Выберите статус</option>
+                            {% if order.status == 'new' %}
+                            <option value="in_progress">В работе</option>
+                            <option value="ready">Готов</option>
+                            <option value="shipped">Отгрузить (расход товара)</option>
+                            <option value="cancelled">Отменить заказ</option>
+                            {% elif order.status == 'in_progress' %}
+                            <option value="ready">Готов</option>
+                            <option value="shipped">Отгрузить (расход товара)</option>
+                            <option value="cancelled">Отменить заказ</option>
+                            {% elif order.status == 'ready' %}
+                            <option value="shipped">Отгрузить (расход товара)</option>
+                            <option value="cancelled">Отменить заказ</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Обновить статус</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <h2>Товары в заказе</h2>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Артикул</th>
+                <th>Название</th>
+                <th>Заказано</th>
+                <th>Отгружено</th>
+                <th>Остаток</th>
+                <th>На складе</th>
+                <th>Ед. изм.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.order_items %}
+            <tr>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.shipped_quantity }}</td>
+                <td>{{ item.quantity - item.shipped_quantity }}</td>
+                <td {% if (item.stock_quantity or 0) < (item.quantity - item.shipped_quantity) %}style="background: #FFEB3B;"{% endif %}>
+                    {{ item.stock_quantity or 0 }}
+                </td>
+                <td>{{ item.unit }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('customer_orders') }}" class="btn">Назад к списку</a>
+</div>
+
+<style>
+.order-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.info-card {
+    border: 2px solid #000;
+    background: #FFF;
+}
+
+.info-card-title {
+    background: linear-gradient(to bottom, #D4D0C8 0%, #ACA899 100%);
+    padding: 6px 10px;
+    font-weight: bold;
+    border-bottom: 2px solid #000;
+}
+
+.info-card-content {
+    padding: 12px;
+}
+
+.info-card-content p {
+    margin-bottom: 8px;
+}
+
+.badge-shipped {
+    border: 2px solid #555;
+    background: #E0E0E0;
+    color: #000;
+    padding: 2px 8px;
+    font-size: 10pt;
+    font-weight: bold;
+    display: inline-block;
+}
+</style>
+{% endblock %}

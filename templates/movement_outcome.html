@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Расход товара{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Расход товара</h1>
+
+    <div class="movement-layout">
+        <!-- ЛЕВАЯ ЧАСТЬ: ФОРМА -->
+        <div class="movement-form-column">
+            <form method="POST" class="form" id="outcomeForm">
+                <div class="form-group">
+                    <label>Заказ клиента (необязательно):</label>
+                    <select name="customer_order_id" id="customerOrderSelect">
+                        <option value="">Без заказа (свободный расход)</option>
+                        {% for order in customer_orders %}
+                        <option value="{{ order.id }}">{{ order.order_number }} - {{ order.customer_name }} ({{ order.order_date.strftime('%d.%m.%Y') if order.order_date else order.order_date }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Товар:</label>
+                    <select name="product_id" id="productSelect" required>
+                        <option value="">Выберите товар</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" data-sku="{{ product.sku }}" data-name="{{ product.name }}">
+                            {{ product.sku }} - {{ product.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Количество:</label>
+                    <input type="number" step="0.001" name="quantity" id="quantityInput" required min="0.001">
+                    <div id="quantityPreview" class="quantity-preview"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Комментарий:</label>
+                    <textarea name="comment" id="commentInput" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Оформить расход</button>
+                <a href="{{ url_for('stock') }}" class="btn">Отмена</a>
+            </form>
+        </div>
+
+        <!-- ПРАВАЯ ЧАСТЬ: ИНФОРМАЦИЯ -->
+        <div class="movement-info-column">
+            <div class="product-info-box" id="infoBox">
+                <div class="info-placeholder">
+                    Выберите заказ клиента или товар напрямую
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentStock = 0;
+let orderItems = [];
+let selectedOrderNumber = '';
+
+// При выборе заказа клиента
+document.getElementById('customerOrderSelect').addEventListener('change', function() {
+    const orderId = this.value;
+    const productSelect = document.getElementById('productSelect');
+    const infoBox = document.getElementById('infoBox');
+    
+    if (!orderId) {
+        // Свободный расход
+        infoBox.innerHTML = '<div class="info-placeholder">Свободный расход товара<br>Выберите товар из списка</div>';
+        productSelect.disabled = false;
+        
+        Array.from(productSelect.options).forEach(option => {
+            option.style.display = '';
+        });
+        productSelect.value = '';
+        orderItems = [];
+        selectedOrderNumber = '';
+        return;
+    }
+    
+    // Загружаем товары из заказа
+    fetch(`/api/customer_order/${orderId}/items`)
+        .then(response => response.json())
+        .then(data => {
+            orderItems = data.items;
+            selectedOrderNumber = data.order_number;
+            
+            // Фильтруем товары в select
+            Array.from(productSelect.options).forEach(option => {
+                if (option.value === '') {
+                    option.style.display = '';
+                    return;
+                }
+                
+                const productId = parseInt(option.value);
+                const inOrder = orderItems.some(item => item.product_id === productId);
+                option.style.display = inOrder ? '' : 'none';
+            });
+            
+            productSelect.value = '';
+            
+            // Показываем информацию о заказе
+            let itemsHtml = '<div class="info-title">Товары в заказе:</div>';
+            orderItems.forEach(item => {
+                itemsHtml += `
+                    <div class="order-item-info">
+                        <strong>${item.sku}</strong> - ${item.name}<br>
+                        <small>Заказано: ${item.quantity} | Отгружено: ${item.shipped_quantity} | Осталось: ${item.remaining} ${item.unit}</small><br>
+                        <small>На складе: ${item.stock_quantity} ${item.unit}</small>
+                    </div>
+                `;
+            });
+            
+            infoBox.innerHTML = `
+                <div class="info-title">Заказ: ${data.order_number}</div>
+                <div class="info-row">
+                    <span class="info-label">Клиент:</span>
+                    <span class="info-value">${data.customer_name}</span>
+                </div>
+                <div class="info-divider"></div>
+                ${itemsHtml}
+            `;
+        })
+        .catch(error => {
+            infoBox.innerHTML = '<div class="info-error">Ошибка загрузки данных</div>';
+            console.error('Error:', error);
+        });
+});
+
+// При выборе товара
+document.getElementById('productSelect').addEventListener('change', function() {
+    const productId = this.value;
+    const infoBox = document.getElementById('infoBox');
+    
+    if (!productId) {
+        if (!orderItems.length) {
+            infoBox.innerHTML = '<div class="info-placeholder">Выберите товар из списка</div>';
+        }
+        currentStock = 0;
+        updateQuantityPreview();
+        return;
+    }
+    
+    // Загружаем информацию о товаре
+    fetch(`/api/product/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentStock = data.current_stock;
+            
+            // Если выбран заказ - показываем информацию о заказе
+            let orderInfo = '';
+            if (orderItems.length) {
+                const orderItem = orderItems.find(item => item.product_id === parseInt(productId));
+                if (orderItem) {
+                    const isLowStock = orderItem.stock_quantity < orderItem.remaining;
+                    orderInfo = `
+                        <div class="info-row-highlight ${isLowStock ? 'stock-warning' : 'stock-ok'}">
+                            <span class="info-label">Осталось отгрузить:</span>
+                            <span class="info-value-big">${orderItem.remaining} ${data.unit}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            infoBox.innerHTML = `
+                <div class="info-title">Информация о товаре</div>
+                <div class="info-row">
+                    <span class="info-label">Артикул:</span>
+                    <span class="info-value">${data.sku}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Название:</span>
+                    <span class="info-value">${data.name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Категория:</span>
+                    <span class="info-value">${data.category}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ед. измерения:</span>
+                    <span class="info-value">${data.unit}</span>
+                </div>
+                <div class="info-divider"></div>
+                ${orderInfo}
+                <div class="info-row">
+                    <span class="info-label">Текущий остаток:</span>
+                    <span class="info-value">${data.current_stock} ${data.unit}</span>
+                </div>
+            `;
+            
+            updateQuantityPreview();
+        })
+        .catch(error => {
+            infoBox.innerHTML = '<div class="info-error">Ошибка загрузки данных</div>';
+            console.error('Error:', error);
+        });
+});
+
+document.getElementById('quantityInput').addEventListener('input', updateQuantityPreview);
+
+function updateQuantityPreview() {
+    const quantityInput = document.getElementById('quantityInput');
+    const preview = document.getElementById('quantityPreview');
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const productSelect = document.getElementById('productSelect');
+    const productId = parseInt(productSelect.value);
+    
+    if (quantity === 0 || currentStock === null) {
+        preview.innerHTML = '';
+        return;
+    }
+    
+    const newStock = currentStock - quantity;
+    const isError = newStock < 0;
+    const errorClass = isError ? 'error' : '';
+    let warningHtml = '';
+    
+    // Проверка: если выбран заказ и количество больше оставшегося
+    if (orderItems.length && productId) {
+        const orderItem = orderItems.find(item => item.product_id === productId);
+        if (orderItem && quantity > orderItem.remaining) {
+            warningHtml = `
+                <div class="preview-error">
+                    ⚠️ ВНИМАНИЕ! Отгружается больше чем осталось в заказе!<br>
+                    Осталось: ${orderItem.remaining} | Отгружается: ${quantity}
+                </div>
+            `;
+        }
+    }
+    
+    preview.innerHTML = `
+        <div class="preview-calculation">
+            Остаток после операции: 
+            <span class="preview-before">${currentStock.toFixed(3)}</span>
+            <span class="preview-arrow">→</span>
+            <span class="preview-after outcome ${errorClass}">${newStock.toFixed(3)}</span>
+        </div>
+        ${isError ? '<div class="preview-error">⚠️ Недостаточно товара на складе!</div>' : ''}
+        ${warningHtml}
+    `;
+}
+
+// Проверка при отправке формы
+document.getElementById('outcomeForm').addEventListener('submit', function(e) {
+    const quantityInput = document.getElementById('quantityInput');
+    const quantity = parseFloat(quantityInput.value) || 0;
+    const productSelect = document.getElementById('productSelect');
+    const productId = parseInt(productSelect.value);
+    
+    // Если выбран заказ - проверяем количество
+    if (orderItems.length && productId) {
+        const orderItem = orderItems.find(item => item.product_id === productId);
+        if (orderItem && quantity > orderItem.remaining) {
+            const diff = quantity - orderItem.remaining;
+            if (!confirm(`ВНИМАНИЕ!\n\nВы отгружаете на ${diff.toFixed(3)} больше чем осталось в заказе.\n\nОсталось: ${orderItem.remaining}\nОтгружается: ${quantity}\n\nПродолжить расход?`)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.order-item-info {
+    padding: 8px;
+    margin: 5px 0;
+    background: #FFF;
+    border: 1px solid #D0D0D0;
+}
+
+.order-item-info small {
+    color: #666;
+}
+</style>
+{% endblock %}

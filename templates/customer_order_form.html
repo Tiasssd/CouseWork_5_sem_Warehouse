@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Создать заказ от клиента{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Создать заказ от клиента</h1>
+
+    <form method="POST" class="form" id="orderForm">
+        <div class="form-group">
+            <label>Номер заказа:</label>
+            <input type="text" name="order_number" required placeholder="ЗК-001">
+        </div>
+
+        <div class="form-group">
+            <label>Клиент:</label>
+            <input type="text" name="customer_name" required placeholder="ООО Строительная компания">
+        </div>
+
+        <div class="form-inline">
+            <div class="form-group">
+                <label>Дата заказа:</label>
+                <input type="date" name="order_date" required value="{{ now.strftime('%Y-%m-%d') }}">
+            </div>
+
+            <div class="form-group">
+                <label>Срок выполнения:</label>
+                <input type="date" name="deadline_date">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Примечание:</label>
+            <textarea name="notes" rows="2"></textarea>
+        </div>
+
+        <h2>Товары в заказе</h2>
+
+        <div id="orderItems">
+            <div class="order-item-row">
+                <select name="product_id[]" required>
+                    <option value="">Выберите товар</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.sku }} - {{ product.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="quantity[]" step="0.001" placeholder="Количество" required min="0.001">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeItem(this)">Удалить</button>
+            </div>
+        </div>
+
+        <button type="button" class="btn" onclick="addItem()">[+] Добавить товар</button>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-primary">Создать заказ</button>
+            <a href="{{ url_for('customer_orders') }}" class="btn">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function addItem() {
+    const container = document.getElementById('orderItems');
+    const firstRow = container.querySelector('.order-item-row');
+    const newRow = firstRow.cloneNode(true);
+    
+    // Очищаем значения
+    newRow.querySelectorAll('input').forEach(input => input.value = '');
+    newRow.querySelector('select').selectedIndex = 0;
+    
+    container.appendChild(newRow);
+}
+
+function removeItem(btn) {
+    const container = document.getElementById('orderItems');
+    if (container.querySelectorAll('.order-item-row').length > 1) {
+        btn.closest('.order-item-row').remove();
+    } else {
+        alert('Должна быть хотя бы одна позиция');
+    }
+}
+</script>
+
+<style>
+.order-item-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.order-item-row select {
+    flex: 2;
+}
+
+.order-item-row input {
+    flex: 1;
+}
+</style>
+{% endblock %}

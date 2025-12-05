@@ -14,6 +14,7 @@ from decimal import Decimal
 from functools import wraps
 from config import Config
 from io import StringIO
+from datetime import datetime
 import models
 import csv
 
@@ -196,6 +197,66 @@ def products():
     )
 
 
+@app.route("/api/product/<int:product_id>")
+@login_required
+def get_product_info(product_id):
+    """API для получения информации о товаре"""
+    from flask import jsonify
+
+    product = models.get_product_by_id(product_id)
+    if not product:
+        return jsonify({"error": "Товар не найден"}), 404
+
+    # Получаем текущий остаток
+    stock_info = models.get_stock_for_product(product_id)
+
+    return jsonify(
+        {
+            "id": product["id"],
+            "sku": product["sku"],
+            "name": product["name"],
+            "category": product["category"] or "-",
+            "unit": product["unit"],
+            "min_stock": float(product["min_stock"]),
+            "price": float(product["price"]),
+            "current_stock": float(stock_info["quantity"]) if stock_info else 0,
+        }
+    )
+
+
+@app.route("/api/supplier_order/<int:order_id>/items")
+@login_required
+def get_supplier_order_items(order_id):
+    """API для получения товаров из заказа поставщику"""
+    from flask import jsonify
+
+    order = models.get_supplier_order_by_id(order_id)
+    if not order:
+        return jsonify({"error": "Заказ не найден"}), 404
+
+    items = []
+    for item in order["order_items"]:
+        items.append(
+            {
+                "id": item["id"],
+                "product_id": item["product_id"],
+                "sku": item["sku"],
+                "name": item["name"],
+                "unit": item["unit"],
+                "quantity": float(item["quantity"]),
+                "price": float(item["price"]),
+            }
+        )
+
+    return jsonify(
+        {
+            "order_number": order["order_number"],
+            "supplier_name": order["supplier_name"],
+            "items": items,
+        }
+    )
+
+
 @app.route("/products/add", methods=["POST"])
 @login_required
 @admin_required
@@ -302,56 +363,108 @@ def low_stock():
 @app.route("/movement/income", methods=["GET", "POST"])
 @login_required
 def movement_income():
-    """Приход товара"""
+    """Приход товара - связан с заказами поставщикам"""
     if request.method == "POST":
-        product_id = int(request.form.get("product_id"))
-        quantity = float(request.form.get("quantity"))
-        comment = request.form.get("comment", "")
+        try:
+            supplier_order_id = request.form.get("supplier_order_id")
+            product_id = int(request.form.get("product_id"))
+            quantity = float(request.form.get("quantity"))
+            comment = request.form.get("comment", "")
 
-        success, message = models.add_movement(
-            product_id, "income", quantity, comment, session["user_id"]
-        )
+            # Если выбран заказ поставщика
+            if supplier_order_id:
+                order = models.get_supplier_order_by_id(int(supplier_order_id))
+                comment = (
+                    f"Заказ поставщику #{order['order_number']} - {comment}"
+                    if comment
+                    else f"Заказ поставщику #{order['order_number']}"
+                )
 
-        if success:
-            flash(message, "success")
-            return redirect(url_for("stock"))
-        else:
-            flash(message, "danger")
+                # Обновляем принятое количество в заказе
+                models.update_supplier_order_item_received(
+                    int(supplier_order_id), product_id, quantity, session["user_id"]
+                )
 
+            # Делаем приход товара
+            success, message = models.add_movement(
+                product_id, "income", quantity, comment, session["user_id"]
+            )
+
+            if success:
+                flash(
+                    "Приход товара оформлен. Статус заказа обновлён автоматически.",
+                    "success",
+                )
+                return redirect(url_for("stock"))
+            else:
+                flash(message, "danger")
+        except Exception as e:
+            flash(f"Ошибка: {str(e)}", "danger")
+
+    # Получаем открытые заказы поставщикам
+    supplier_orders = models.get_open_supplier_orders()
     products = models.get_all_products()
+
     return render_template(
-        "movement_form.html",
-        products=products,
-        movement_type="income",
+        "movement_income.html",
         title="Приход товара",
+        movement_type="income",
+        supplier_orders=supplier_orders,
+        products=products,
     )
 
 
 @app.route("/movement/outcome", methods=["GET", "POST"])
 @login_required
 def movement_outcome():
-    """Расход товара"""
+    """Расход товара - связан с заказами клиентов"""
     if request.method == "POST":
-        product_id = int(request.form.get("product_id"))
-        quantity = float(request.form.get("quantity"))
-        comment = request.form.get("comment", "")
+        try:
+            customer_order_id = request.form.get("customer_order_id")
+            product_id = int(request.form.get("product_id"))
+            quantity = float(request.form.get("quantity"))
+            comment = request.form.get("comment", "")
 
-        success, message = models.add_movement(
-            product_id, "outcome", quantity, comment, session["user_id"]
-        )
+            # Если выбран заказ клиента
+            if customer_order_id:
+                order = models.get_customer_order_by_id(int(customer_order_id))
+                comment = (
+                    f"Заказ клиента #{order['order_number']} - {comment}"
+                    if comment
+                    else f"Заказ клиента #{order['order_number']}"
+                )
 
-        if success:
-            flash(message, "success")
-            return redirect(url_for("stock"))
-        else:
-            flash(message, "danger")
+                # Обновляем отгруженное количество в заказе
+                models.update_customer_order_item_shipped(
+                    int(customer_order_id), product_id, quantity, session["user_id"]
+                )
 
+            # Делаем расход товара
+            success, message = models.add_movement(
+                product_id, "outcome", quantity, comment, session["user_id"]
+            )
+
+            if success:
+                flash(
+                    "Расход товара оформлен. Статус заказа обновлён автоматически.",
+                    "success",
+                )
+                return redirect(url_for("stock"))
+            else:
+                flash(message, "danger")
+        except Exception as e:
+            flash(f"Ошибка: {str(e)}", "danger")
+
+    # Получаем открытые заказы клиентов
+    customer_orders = models.get_open_customer_orders()
     products = models.get_all_products()
+
     return render_template(
-        "movement_form.html",
-        products=products,
-        movement_type="outcome",
+        "movement_outcome.html",
         title="Расход товара",
+        movement_type="outcome",
+        customer_orders=customer_orders,
+        products=products,
     )
 
 
@@ -370,6 +483,203 @@ def reports_movements():
     products = models.get_all_products()
 
     return render_template("reports.html", movements=movements, products=products)
+
+
+# ============ ЗАКАЗЫ ПОСТАВЩИКАМ ============
+
+
+@app.route("/supplier_orders")
+@login_required
+def supplier_orders():
+    """Список заказов поставщикам"""
+    orders = models.get_all_supplier_orders()
+    return render_template("supplier_orders.html", orders=orders)
+
+
+@app.route("/supplier_orders/create", methods=["GET", "POST"])
+@admin_required
+def create_supplier_order():
+    """Создать заказ поставщику"""
+    if request.method == "POST":
+        try:
+            order_number = request.form.get("order_number")
+            supplier_name = request.form.get("supplier_name")
+            order_date = request.form.get("order_date")
+            expected_date = request.form.get("expected_date")
+            notes = request.form.get("notes", "")
+
+            # Собираем товары
+            product_ids = request.form.getlist("product_id[]")
+            quantities = request.form.getlist("quantity[]")
+            prices = request.form.getlist("price[]")
+
+            items = []
+            for i in range(len(product_ids)):
+                if product_ids[i] and quantities[i]:
+                    items.append(
+                        {
+                            "product_id": int(product_ids[i]),
+                            "quantity": float(quantities[i]),
+                            "price": float(prices[i]) if prices[i] else 0,
+                        }
+                    )
+
+            models.create_supplier_order(
+                order_number,
+                supplier_name,
+                order_date,
+                expected_date,
+                notes,
+                items,
+                session["user_id"],
+            )
+            flash("Заказ поставщику создан", "success")
+            return redirect(url_for("supplier_orders"))
+        except Exception as e:
+            flash(f"Ошибка: {str(e)}", "danger")
+
+    products = models.get_all_products()
+    return render_template(
+        "supplier_order_form.html", products=products, now=datetime.now()
+    )
+
+
+@app.route("/supplier_orders/<int:order_id>")
+@login_required
+def view_supplier_order(order_id):
+    """Просмотр заказа поставщику"""
+    order = models.get_supplier_order_by_id(order_id)
+    return render_template("supplier_order_view.html", order=order)
+
+
+@app.route("/supplier_orders/<int:order_id>/status", methods=["POST"])
+@login_required
+def update_supplier_order_status(order_id):
+    """Обновить статус заказа поставщику"""
+    try:
+        status = request.form.get("status")
+        models.update_supplier_order_status(order_id, status, session["user_id"])
+        flash("Статус обновлён", "success")
+    except Exception as e:
+        flash(f"Ошибка: {str(e)}", "danger")
+    return redirect(url_for("view_supplier_order", order_id=order_id))
+
+
+# ============ ЗАКАЗЫ ОТ КЛИЕНТОВ ============
+
+
+@app.route("/customer_orders")
+@login_required
+def customer_orders():
+    """Список заказов от клиентов"""
+    orders = models.get_all_customer_orders()
+    return render_template("customer_orders.html", orders=orders)
+
+
+@app.route("/api/customer_order/<int:order_id>/items")
+@login_required
+def get_customer_order_items(order_id):
+    """API для получения товаров из заказа клиента"""
+    from flask import jsonify
+
+    order = models.get_customer_order_by_id(order_id)
+    if not order:
+        return jsonify({"error": "Заказ не найден"}), 404
+
+    items = []
+    for item in order["order_items"]:
+        remaining = float(item["quantity"]) - float(item["shipped_quantity"])
+        if remaining > 0:  # Показываем только неотгруженные
+            items.append(
+                {
+                    "id": item["id"],
+                    "product_id": item["product_id"],
+                    "sku": item["sku"],
+                    "name": item["name"],
+                    "unit": item["unit"],
+                    "quantity": float(item["quantity"]),
+                    "shipped_quantity": float(item["shipped_quantity"]),
+                    "remaining": remaining,
+                    "stock_quantity": (
+                        float(item["stock_quantity"]) if item["stock_quantity"] else 0
+                    ),
+                }
+            )
+
+    return jsonify(
+        {
+            "order_number": order["order_number"],
+            "customer_name": order["customer_name"],
+            "items": items,
+        }
+    )
+
+
+@app.route("/customer_orders/create", methods=["GET", "POST"])
+@login_required
+def create_customer_order():
+    """Создать заказ от клиента"""
+    if request.method == "POST":
+        try:
+            order_number = request.form.get("order_number")
+            customer_name = request.form.get("customer_name")
+            order_date = request.form.get("order_date")
+            deadline_date = request.form.get("deadline_date")
+            notes = request.form.get("notes", "")
+
+            # Собираем товары
+            product_ids = request.form.getlist("product_id[]")
+            quantities = request.form.getlist("quantity[]")
+
+            items = []
+            for i in range(len(product_ids)):
+                if product_ids[i] and quantities[i]:
+                    items.append(
+                        {
+                            "product_id": int(product_ids[i]),
+                            "quantity": float(quantities[i]),
+                        }
+                    )
+
+            models.create_customer_order(
+                order_number,
+                customer_name,
+                order_date,
+                deadline_date,
+                notes,
+                items,
+                session["user_id"],
+            )
+            flash("Заказ от клиента создан", "success")
+            return redirect(url_for("customer_orders"))
+        except Exception as e:
+            flash(f"Ошибка: {str(e)}", "danger")
+
+    products = models.get_all_products()
+    return render_template(
+        "customer_order_form.html", products=products, now=datetime.now()
+    )
+
+
+@app.route("/customer_orders/<int:order_id>")
+@login_required
+def view_customer_order(order_id):
+    """Просмотр заказа клиента"""
+    order = models.get_customer_order_by_id(order_id)
+    return render_template("customer_order_view.html", order=order)
+
+
+@app.route("/customer_orders/<int:order_id>/status", methods=["POST"])
+@login_required
+def update_customer_order_status(order_id):
+    """Обновить статус заказа клиента"""
+    try:
+        status = request.form.get("status")
+        models.update_customer_order_status(order_id, status, session["user_id"])
+        flash("Статус обновлён", "success")
+    except Exception as e:
+        flash(f"Ошибка: {str(e)}", "danger")
+    return redirect(url_for("view_customer_order", order_id=order_id))
 
 
 @app.route("/reports/movements/export")
@@ -400,7 +710,7 @@ def export_movements():
                 "Приход" if m["type"] == "income" else "Расход",
                 m["sku"],
                 m["product_name"],
-                str(m["quantity"]),  # Преобразуем в строку для корректного отображения
+                str(m["quantity"]),
                 m["user_login"] or "-",
                 m["comment"] or "-",
             ]

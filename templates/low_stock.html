@@ -3,6 +3,7 @@
 {% block title %}Низкий остаток{% endblock %}
 
 {% block content %}
+<div class="container">
 <h1>⚠️ Товары с низким остатком</h1>
 
 {% if stock %}
@@ -31,4 +32,5 @@
 {% else %}
 <p class="alert alert-success">✅ Все товары в достаточном количестве!</p>
 {% endif %}
+</div>
 {% endblock %}

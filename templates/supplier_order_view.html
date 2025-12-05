@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Заказ поставщику {{ order.order_number }}</h1>
+
+    <div class="order-info-grid">
+        <div class="info-card">
+            <div class="info-card-title">Информация о заказе</div>
+            <div class="info-card-content">
+                <p><strong>Поставщик:</strong> {{ order.supplier_name }}</p>
+                <p><strong>Дата заказа:</strong> {{ order.order_date.strftime('%d.%m.%Y') if order.order_date else '-' }}</p>
+                <p><strong>Ожидаемая дата:</strong> {{ order.expected_date if order.expected_date else '-' }}</p>
+                {% if order.received_date %}
+                <p><strong>Дата получения:</strong> {{ order.received_date if order.received_date else '-' }}</p>
+                {% endif %}
+                <p><strong>Создал:</strong> {{ order.created_by_name or '-' }}</p>
+                {% if order.notes %}
+                <p><strong>Примечание:</strong> {{ order.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-title">Статус заказа</div>
+            <div class="info-card-content">
+                <p style="font-size: 14pt; font-weight: bold;">
+                    {% if order.status == 'new' %}
+                    <span class="badge badge-info">Новый</span>
+                    {% elif order.status == 'sent' %}
+                    <span class="badge badge-warning">Отправлен</span>
+                    {% elif order.status == 'received' %}
+                    <span class="badge badge-success">Получен</span>
+                    {% elif order.status == 'cancelled' %}
+                    <span class="badge badge-danger">Отменён</span>
+                    {% endif %}
+                </p>
+
+                {% if order.status not in ['received', 'cancelled'] %}
+                <form method="POST" action="{{ url_for('update_supplier_order_status', order_id=order.id) }}">
+                    <div class="form-group">
+                        <label>Изменить статус:</label>
+                        <select name="status" required>
+                            <option value="">Выберите статус</option>
+                            {% if order.status == 'new' %}
+                            <option value="sent">Отправлен</option>
+                            <option value="received">Получен</option>
+                            <option value="cancelled">Отменить заказ</option>
+                            {% elif order.status == 'in_progress' %}
+                            <span class="badge badge-warning">В процессе</span>
+                            {% elif order.status == 'sent' %}
+                            <option value="received">Получен</option>
+                            <option value="cancelled">Отменить заказ</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Обновить статус</button>
+                </form>
+                <div class="info-note">
+                    <strong>Примечание:</strong> Приход товара оформляется через раздел "Приход товара"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <h2>Товары в заказе</h2>
+
+    <table class="data-table">
+       <thead>
+    <tr>
+        <th>Артикул</th>
+        <th>Название</th>
+        <th>Заказано</th>
+        <th>Принято</th>
+        <th>Осталось</th>
+        <th>Ед. изм.</th>
+        <th>Цена за ед.</th>
+        <th>Сумма</th>
+    </tr>
+</thead>
+<tbody>
+    {% set total = namespace(value=0) %}
+    {% for item in order.order_items %}
+    <tr>
+        <td>{{ item.sku }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.received_quantity }}</td>
+        <td>{{ item.quantity - item.received_quantity }}</td>
+        <td>{{ item.unit }}</td>
+        <td>{{ item.price }} ₽</td>
+        <td>{{ (item.quantity * item.price)|round(2) }} ₽</td>
+    </tr>
+    {% set total.value = total.value + (item.quantity * item.price) %}
+    {% endfor %}
+    <tr style="font-weight: bold; background: #D4D0C8;">
+        <td colspan="7" style="text-align: right;">ИТОГО:</td>
+        <td>{{ total.value|round(2) }} ₽</td>
+    </tr>
+</tbody>
+    </table>
+
+    <a href="{{ url_for('supplier_orders') }}" class="btn">Назад к списку</a>
+</div>
+
+<style>
+.order-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.info-card {
+    border: 2px solid #000;
+    background: #FFF;
+}
+
+.info-card-title {
+    background: linear-gradient(to bottom, #D4D0C8 0%, #ACA899 100%);
+    padding: 6px 10px;
+    font-weight: bold;
+    border-bottom: 2px solid #000;
+}
+
+.info-card-content {
+    padding: 12px;
+}
+
+.info-card-content p {
+    margin-bottom: 8px;
+}
+
+.info-note {
+    margin-top: 10px;
+    padding: 8px;
+    background: #E1F5FE;
+    border: 1px solid #0277BD;
+    font-size: 9pt;
+}
+
+.badge-info {
+    border-color: #0277BD;
+    background: #E1F5FE;
+    color: #01579B;
+}
+
+.badge-warning {
+    border-color: #F57C00;
+    background: #FFF3E0;
+    color: #E65100;
+}
+</style>
+{% endblock %}
